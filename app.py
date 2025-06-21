@@ -515,12 +515,23 @@ def create_fallback_app():
     # Fizzo novels endpoint
     @app.get("/api/fizzo-list-novels")
     @app.get("/api/fizzo-list-novel")  # Add alias for backward compatibility
+    @app.post("/api/fizzo-list-novel")  # Support POST method for backward compatibility
     async def fizzo_list_novels(request: Request):
         # Check if security is disabled for testing
         disable_security = os.environ.get("DISABLE_SECURITY", "false").lower() == "true"
         
-        # Get session token from header
+        # Handle POST request body if present
+        request_data = {}
+        if request.method == "POST":
+            try:
+                request_data = await request.json()
+            except:
+                request_data = {}
+        
+        # Get session token from header or request body
         session_token = request.headers.get("Authorization", "").replace("Bearer ", "")
+        if not session_token and request_data:
+            session_token = request_data.get("session_token", "")
         
         # If security is disabled, return sample novels for testing
         if disable_security:
